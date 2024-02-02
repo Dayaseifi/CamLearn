@@ -6,6 +6,7 @@ require('dotenv').config({path : path.join(__dirname , 'config' , '.env')});
 const {connecting} = require('./model/DB');
 const authRouter = require('./routes/api/auth.router');
 const adminRouter = require('./routes/api/admin.router');
+const courseRouter = require('./routes/api/course.router');
 const app = express()
 
 
@@ -21,9 +22,9 @@ app.get("/" , (req,res) => {
         error : null
     })
 })
-app.use(authRouter)
+app.use( authRouter)
 app.use(adminRouter)
-
+app.use('/course' ,courseRouter)
 app.use(errorhandlers.error404)
 app.use(errorhandlers.unexceptionError)
 

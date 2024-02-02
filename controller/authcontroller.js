@@ -29,7 +29,7 @@ class AuthController {
                     }
                 })
             } else {
-                const creation = await UserCreate(Email, Username, Password);
+                const creation = await UserCreate(Email, Username, Password, 1);
                 res.status(201).json({
                     success: true,
                     data: {
@@ -39,6 +39,7 @@ class AuthController {
                 })
             }
         } catch (err) {
+            console.log(err);
             next(err)
         }
 
@@ -72,8 +73,8 @@ class AuthController {
 
             if (isMatch) {
                 const { Email } = user;
-                const accessToken = generateAccessToken({ Email, Id: user.Id });
-                const refreshToken = generateRefreshToken({ Email, Id: user.Id });
+                const accessToken = generateAccessToken({ Email, Id: user.Id, RoleID: user.RoleID });
+                const refreshToken = generateRefreshToken({ Email, Id: user.Id, RoleID: user.RoleID });
 
                 await updateRefreshToken(Email, refreshToken);
 
@@ -135,8 +136,8 @@ class AuthController {
                 return next(err)
             }
 
-            const { Email, Id } = decoded
-            const user = await CheckUserByDecodedToken(Email, Id);
+            const { Email, Id, RoleID } = decoded
+            const user = await CheckUserByDecodedToken(Email, Id, RoleID);
             if (!user) {
                 return res.status(404).json({
                     success: false,
@@ -177,7 +178,11 @@ class AuthController {
             const cookies = req.cookies
             if (!cookies?.jwt) {
                 return res.status(403).json({
-                    message: "forbidden"
+                    success: false,
+                    data: null,
+                    error: {
+                        message: "forbidden"
+                    }
                 })
             }
             const token = cookies.jwt
@@ -196,15 +201,18 @@ class AuthController {
                 if (err) {
                     next(err)
                 }
-                const { Email, Id } = decoded
-                const newuser = await CheckUserByDecodedToken(Email, Id);
+                const { Email, Id, RoleID } = decoded
+                const newuser = await CheckUserByDecodedToken(Email, Id, RoleID);
                 if (!newuser) {
                     return res.status(421).json({
-                        message: "User doesnt match",
+                        success: false,
+                        data: null,
+                        error:
+                            { message: "User doesnt match" }
                     });
                 }
                 req.user = user
-                var newtoken = generateAccessToken({ Id: req.user.Id, Email: req.user.Email })
+                var newtoken = generateAccessToken({ Id: req.user.Id, Email: req.user.Email , RoleID  })
                 return res.status(421).json({
                     success: false,
                     data: {
@@ -252,20 +260,20 @@ class AuthController {
             const email = req.body.email
             if (!email) {
                 return res.status(422).json({
-                    success : false,
-                    data : null,
-                    error : {
-                        message : "email doesnt exist"
+                    success: false,
+                    data: null,
+                    error: {
+                        message: "email doesnt exist"
                     }
                 })
             }
             const user = await GetUserByEmail(email)
             if (!user) {
                 return res.status(404).json({
-                    success : false,
-                    data : null,
-                    error : {
-                        message : "User doesnt exist"
+                    success: false,
+                    data: null,
+                    error: {
+                        message: "User doesnt exist"
                     }
                 })
             }
@@ -273,11 +281,11 @@ class AuthController {
             const resetlink = `http://127.0.0.1:1457/${resetToken}`
             ///send mail
             await Mailsender.sendMail({
-                from : "mojtabaramezanitestmail@academytestyek.com",
+                from: "mojtabaramezanitestmail@academytestyek.com",
                 to: email,
-                subject : "Change Password",
-                html : `<form method = 'POST' action = ${resetToken}><input name = 'password' placeholder = 'password' type='password' /></form>`
-         })
+                subject: "Change Password",
+                html: `<form method = 'POST' action = ${resetToken}><input name = 'password' placeholder = 'password' type='password' /></form>`
+            })
             //end of send mail
 
             res.status(200).json({

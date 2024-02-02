@@ -1,6 +1,5 @@
 const {GetUserByEmail, findRoleID, ClearRefreshAtDB, ChangeUserRole} = require('../app/user.app');
 class admninPanel {
-
     async ImproveTo(req, res, next){
         try {
             const {email , RoleID} = req.body

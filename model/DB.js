@@ -27,7 +27,9 @@ const connecting = () => {
         Username VARCHAR(100) NOT NULL,
         Email    VARCHAR(100) NOT NULL unique,
         Password VARCHAR(255) NOT NULL,
-        Refresh_token VARCHAR(255)
+        Refresh_token VARCHAR(255),
+        RoleID INT NOT NULL,
+        FOREIGN KEY (RoleID) REFERENCES Role(ID)
         );`
 
     con.query(query, (err, res) => {
@@ -47,9 +49,9 @@ const connecting = () => {
     query = `CREATE TABLE IF NOT EXISTS Course(
         ID INT AUTO_INCREMENT PRIMARY KEY,
         Teacher_ID INT NOT NULL,
-        VideoCount INT DEFAULT 0,
         CourseName VARCHAR(255) NOT NULL,
         CourseDescription LONGTEXT NOT NULL,
+        Price VARCHAR(15) NOT NULL,
         FOREIGN KEY (Teacher_ID) REFERENCES user(ID)
     );`
     con.query(query, (err, res) => {
@@ -62,11 +64,26 @@ const connecting = () => {
         Src LONGTEXT NOT NULL,
         Filename LONGTEXT NOT NULL,
         IsBanner BOOLEAN DEFAULT FALSE,
-        Course_ID INT,
+        Course_ID INT NOT NULL,
+        Title VARCHAR(120) NOT NULL, 
         FOREIGN KEY (Course_ID) REFERENCES Course(ID) 
     );
     `
     con.query(query, (err, res) => {
+        if (err) {
+            console.log(err);
+        }
+    })
+    let sql = `CREATE TABLE IF NOT EXISTS Course_Student(
+        ID INT AUTO_INCREMENT PRIMARY KEY,
+        Student_ID INT NOT NULL,
+        Course_ID INT NOT NULL,
+        FOREIGN KEY (Student_ID) REFERENCES user(ID),
+        FOREIGN KEY (Course_ID) REFERENCES Course(ID)
+    );
+    `
+    
+    con.query(sql , (err , res) => {
         if (err) {
             console.log(err);
         }
