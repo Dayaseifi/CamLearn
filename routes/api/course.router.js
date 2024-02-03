@@ -4,6 +4,7 @@ const { authChecker } = require("../../controller/authcontroller");
 const privacy = require("../../app/privacy");
 const banner = require("../../utils/file/banner");
 const upload = require("../../utils/file/multerConfig");
+const paymentController = require("../../controller/payment.controller");
 
 const router = Router()
 
@@ -11,6 +12,9 @@ const router = Router()
 router.get("/", courseController.getAllCourse)
 
 router.get("/c/:id", courseController.getCourse)
+
+router.get("/handle/verify", authChecker, paymentController.verifyPayment)
+
 
 router.post("/create", authChecker, async function (req, res, next) {
     try {
@@ -69,6 +73,10 @@ router.post("/buy/:id", authChecker, async function (req, res, next) {
     }
 },
     courseController.BuyCourse)
+
+router.post("/handle/payment/:id", authChecker, paymentController.handlePayment)
+
+
 
 
 

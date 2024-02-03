@@ -8,8 +8,6 @@ const DBconfigs = {
     port: +process.env.DB_PORT,
     database: process.env.DB_NAME,
 }
-console.log(DBconfigs);
-
 const con = mysql.createConnection(DBconfigs)
 
 
@@ -82,8 +80,24 @@ const connecting = () => {
         FOREIGN KEY (Course_ID) REFERENCES Course(ID)
     );
     `
-    
-    con.query(sql , (err , res) => {
+
+    con.query(sql, (err, res) => {
+        if (err) {
+            console.log(err);
+        }
+    })
+    query = `CREATE TABLE IF NOT EXISTS transactions  (
+        ID INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+        Verify    BOOLEAN NOT NULL DEFAULT FALSE,
+        ClientFullname   varchar(100)  NOT NULL,
+        ClientEmail  varchar(150)  NOT NULL,
+        Amount       varchar(150) NOT NULL,
+        Authority varchar(150) NOT NULL,
+        Description  varchar(255) ,
+        payDate varchar(20)  NOT NULL,
+        PID     varchar(255) NOT NULL
+      );`
+    con.query(query, (err, res) => {
         if (err) {
             console.log(err);
         }

@@ -107,4 +107,4 @@ class courseLogic {
     }
 }
 
-module.exports = new courseLogic
+module.exports = new courseLogic()
