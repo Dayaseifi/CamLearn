@@ -49,7 +49,34 @@ class paymentController {
                 if (err) {
                     next(err)
                 }
-                const data = await zarinpal.VerifyRequest(url, result[0].Price , authority)
+                if (result.length == 0) {
+                    
+                }
+                const data = await zarinpal.VerifyRequest(url, result[0].Price, authority)
+                if (data.status == 100) {
+                    con.query(`UPDATE transactions SET verify = ? WHERE Authority = ?`, [false, authority], async (err, result) => {
+                        if (err) {
+                            next(err)
+                        }
+                        await courseLogic.addStudentToCourse(course.ID , req.user.Id)
+                        return res.status(200).json({
+                            success: true,
+                            error: null,
+                            data: {
+                                message: "you buy this course succesfully"
+                            }
+                        })
+                    })
+                }
+                else{
+                    return res.status(400).json({
+                        success : false,
+                        data : null,
+                        error : {
+                            message : "money back to your accou t 72 hours later"
+                        }
+                    })
+                }
             })
         } catch (error) {
             next(error)
