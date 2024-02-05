@@ -41,7 +41,9 @@ class basketController {
   }
   async GetBasket(req,res,next){
       try {
+        console.log(req.user.Id);
         const basket = await basketLogic.findUserBasket(req.user.Id)
+        console.log(basket);
         return res.status(200).json({
           success : true,
           data : {

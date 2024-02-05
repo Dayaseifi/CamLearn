@@ -27,7 +27,7 @@ class basket {
     }
     findUserBasket(userID) {
         return new Promise((resolve, reject) => {
-           let sql = `SELECT basket.* , course.CourseName , course.Price FROM basket JOIN course ON basket.User_ID = basket.ID`
+           let sql = `SELECT basket.ID ,course.CourseName , course.Price FROM basket JOIN course ON basket.User_ID = course.ID WHERE basket.User_ID = ?`
            con.query(sql , [userID] , (err , result) => {
             if (err) {
                 reject(err)
