@@ -61,27 +61,31 @@ class courseController {
             }
             const isLogin = typeof req.cookies?.jwt == 'undefined' ? false : true
             let Files = await courseLogic.Files(course.ID)
+
             let banner = Files.filter(e => {
                 return e.IsBanner == 1
             })[0]
             let data = {
                 course, banner
             }
+
             let hasPermission = false
 
             if (isLogin) {
                 const user = await GetUserByRefreshToken(req.cookies?.jwt)
                 const isStudentOf = await courseLogic.checkStudent(course.ID, user.Id)
-
+                
                 if (course.Teacher_ID == user.Id || isStudentOf) {
                     hasPermission = true
-                    Files = Files.filter(e => {
+                    let videos = Files.filter(e => {
                         return e.IsBanner == 0
                     })
+                    const length = videos.length
+                    course.videoLength = length
                     data = {
                         course,
                         banner,
-                        Files
+                        videos
                     }
 
                 }
@@ -127,50 +131,26 @@ class courseController {
             next(error)
         }
     }
-    async BuyCourse(req, res, next) {
-        try {
-            const id = req.params.id
-            const userID = req.user.Id
-            const course = await courseLogic.findByID(id)
-            if (!course) {
-                return res.status(404).json({
-                    error: {
-                        message: "course doestn find"
-                        ,
-                        success: false,
-                        data: null
-                    }
-                })
-            }
-            const isStudentOf = await courseLogic.checkStudent(id, userID)
-            if (isStudentOf) {
-                return res.status(400).json({
-                    error: {
-                        message: "user already student of this course"
-                    },
-                    success: false,
-                    data: null
-                })
-            }
-            if (+course.Price == 0) {
-                await courseLogic.addStudentToCourse(id, userID)
-                return res.status(200).json({
-                    error: null,
-                    success: true,
-                    data: {
-                        message: "your course buy succesfully"
-                    }
-                })
-            }
-            res.status(300).json({
+    async SearchCourse(req,res,next){
+        const word = req.query.word
+        console.log(word);
+        if (!word) {
+            return res.status(302).json({
                 success : true,
                 error : null,
-                message : "User should doing payment process"
+                data : {
+                    url : "http://localhost:3000/"
+                }
             })
-        } catch (error) {
-            console.log(error);
-            next(error)
         }
+        const course = await courseLogic.search(word)
+        return res.status(200).json({
+            success : true,
+            error : null,
+            data : {
+                course
+            }
+        })
     }
 }
 

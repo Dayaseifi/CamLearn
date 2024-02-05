@@ -86,22 +86,38 @@ const connecting = () => {
             console.log(err);
         }
     })
+    sql = `CREATE TABLE IF NOT EXISTS Basket (
+        ID INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+        User_ID INT NOT NULL,
+        Course_ID INT NOT NULL,
+        FOREIGN KEY (User_ID) REFERENCES user(Id),
+        FOREIGN KEY (Course_ID) REFERENCES Course(ID)
+       );`
+    con.query(sql, (err, res) => {
+        if (err) {
+            console.log(err);
+        }
+    })
     query = `CREATE TABLE IF NOT EXISTS transactions  (
         ID INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
         Verify    BOOLEAN NOT NULL DEFAULT FALSE,
         ClientFullname   varchar(100)  NOT NULL,
         ClientEmail  varchar(150)  NOT NULL,
         Amount       varchar(150) NOT NULL,
-        Authority varchar(150) NOT NULL,
-        Description  varchar(255) ,
+        TrackID varchar(150) NOT NULL,
         payDate varchar(20)  NOT NULL,
-        PID     varchar(255) NOT NULL
+        PID     varchar(255) NOT NULL,
+        User_ID INT NOT NULL,
+        FOREIGN KEY (User_ID) REFERENCES user(Id)
       );`
+
     con.query(query, (err, res) => {
         if (err) {
             console.log(err);
         }
     })
+
+
 }
 
 module.exports = {

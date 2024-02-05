@@ -100,8 +100,18 @@ class courseLogic {
                 if (err) {
                     reject(err)
                 }
-                console.log(CourseID, StudentID);
                 resolve(result.length == 0 ? false : true)
+            })
+        });
+    }
+    search(word){
+        return new Promise((resolve, reject) => {
+            let sql = `SELECT course.Price , course.CourseDescription , course.CourseName , user.Username AS Teacher FROM course  JOIN user ON user.Id = course.Teacher_ID WHERE CourseName LIKE '%${word}%'`
+            con.query(sql , (err,result) => {
+                if (err) {
+                    reject(err)
+                }
+                resolve(result)
             })
         });
     }

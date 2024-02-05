@@ -1,20 +1,15 @@
 const { default: axios } = require("axios");
 
 class Zarinpal {
-    request(zpamount, zpemail, zpphone, zpdesc) {
+    async request(zpamount, zpemail, zpphone) {
         const url = process.env.PaymentHandling;
-        const zapripal_options = {
-            merchant_id: process.env.ZARINPALMERCHENTID,
+        const zibal_options = {
+            merchant: process.env.MERCHANT,
             amount: zpamount,
-            description: zpdesc,
-            metadata: {
-                email: zpemail,
-                mobile: "09021899273"
-            },
-            callback_url: "http://localhost:" + process.env.PORT + '/course/handle/verify'
+            callbackUrl: "http://localhost:" + process.env.PORT + '/course/handle/verify'
         };
-    
-        return axios.post(url, zapripal_options)
+
+        return axios.post(url, zibal_options)
             .then(result => result.data)
             .then(data => {
                 if (data) {
@@ -31,7 +26,7 @@ class Zarinpal {
                 throw error;
             });
     }
-    
+
     async VerifyRequest(url, zpamount, authority) {
         try {
             const args = {

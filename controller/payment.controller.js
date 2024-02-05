@@ -1,41 +1,52 @@
-const Payment = require("../app/Payment")
+const { default: axios } = require("axios");
 const courseLogic = require("../app/course")
 const { con } = require("../model/DB")
 const Today = require("../utils/DateConvertor/ShamsiDate")
-const zarinpal = require("../utils/payment/zarinpal/zarinpal")
+const { promisify } = require('util');
+const queryAsync = promisify(con.query).bind(con);
+
 
 class paymentController {
     async handlePayment(req, res, next) {
         try {
-            let { ClientDescription } = req.body;
-            const id = req.params.id;
-            const course = await courseLogic.findByID(id);
+            let {  price } = req.body;
 
-            if (!course) {
-                return res.status(404).json({ success: false, error: "Course not found" });
-            }
-
-            let pid = Math.floor(Math.random() * 1000);
+            let orderID = Math.floor(Math.random() * 1000);
             const transactionDate = Today
-            pid = pid.toString();
-            const data = await zarinpal.request(course.Price, req.user.Email, req.user.Email, ClientDescription || 'اختیاری');
+            orderID = orderID.toString();
+            let params = {
+                merchant: process.env.MERCHANT,
+                amount: price,
+                callbackUrl: "http://localhost:" + process.env.PORT + '/course/handle/verify',
+            };
+            console.log(price);
+            let requestBuy = await axios.post(
+                process.env.PaymentHandling,
+                params
+            );
 
-            if (data.status) {
-                const sql = `INSERT INTO transactions (Authority,ClientFullname , ClientEmail, Amount, ClientDescription, payDate, PID) VALUES (?,?, ?, ?, ?, ? , ?)`;
-                con.query(sql, [data.authority, req.user.Username, req.user.Email, course.Price, ClientDescription || 'کاربر توضیحی وارد نکرده', transactionDate, pid], (err, result) => {
+            console.log(requestBuy.data);
+            if (requestBuy.data.result == 100) {
+                const sql = `INSERT INTO transactions (ClientFullname	,ClientEmail,Amount	,TrackID	,payDate	,PID,	User_ID) VALUES (?,	?,	?,	?,	?,	?,	?)`;
+                con.query(sql, [req.user.Username ,req.user.Email, price, requestBuy.data.trackId, transactionDate, orderID , req.user.Id], (err, result) => {
                     if (err) {
                         return next(err);
                     }
-                });
-                res.status(302).json({
-                    success: true,
-                    data,
-                    error: null
+    
+                    res.status(302).json({
+                        success: true,
+                        data: requestBuy.data,
+                        error: null
+                    });
                 });
             } else {
-                const error = new Error("متاسفانه خطایی رخ داده ");
-                error.status = 500;
-                throw error;
+                res.status(200).json({
+                    success: false,
+                    error: {
+                        message: requestBuy.data
+                    },
+                    data: null
+                });
             }
         } catch (error) {
             next(error);
@@ -43,43 +54,68 @@ class paymentController {
     }
     async verifyPayment(req, res, next) {
         try {
-            const authority = req.query.authority
-            const url = process.env.PaymentVerification
-            const course = con.query(`SELECT * FROM transactions WHERE Authority = ? AND Verify = ?`, [authority, false], async (err, result) => {
-                if (err) {
-                    next(err)
-                }
-                if (result.length == 0) {
-                    
-                }
-                const data = await zarinpal.VerifyRequest(url, result[0].Price, authority)
-                if (data.status == 100) {
-                    con.query(`UPDATE transactions SET verify = ? WHERE Authority = ?`, [false, authority], async (err, result) => {
-                        if (err) {
-                            next(err)
-                        }
-                        await courseLogic.addStudentToCourse(course.ID , req.user.Id)
-                        return res.status(200).json({
-                            success: true,
-                            error: null,
-                            data: {
-                                message: "you buy this course succesfully"
-                            }
-                        })
-                    })
-                }
-                else{
+            const { success, status, trackId } = req.query;
+    
+            if (success === '1' && status === '2') {
+                const params = {
+                    merchant: process.env.MERCHANT,
+                    trackId,
+                };
+    
+                const url = process.env.PaymentVerification;
+                const requestVerify = await axios.post(url, params);
+                console.log(requestVerify.data.result);
+                if (requestVerify.data.result !== 100) {
                     return res.status(400).json({
-                        success : false,
-                        data : null,
-                        error : {
-                            message : "money back to your accou t 72 hours later"
-                        }
-                    })
+                        success: false,
+                        data: null,
+                        error: {
+                            message: 'Payment verification failed.',
+                        },
+                    });
                 }
-            })
+    
+                const [transactionResult] = await queryAsync('SELECT * FROM transactions WHERE TrackID = ? AND Verify = ?', [trackId, false]);
+    
+                if (!transactionResult) {
+                    return res.status(400).json({
+                        success: false,
+                        data: null,
+                        error: {
+                            message: 'Transaction not found.',
+                        },
+                    });
+                }
+    
+                await queryAsync('UPDATE transactions SET verify = ? WHERE TrackID = ?', [true, trackId]);
+    
+                const basketQuery = 'SELECT * FROM basket JOIN course ON course.ID = basket.Course_ID WHERE basket.User_ID = ?';
+                const basketResults = await queryAsync(basketQuery, [req.user.Id]);
+    
+                await Promise.all(basketResults.map(async (basketItem) => {
+                    await courseLogic.addStudentToCourse(basketItem.ID, req.user.Id);
+                }));
+    
+                await queryAsync('DELETE FROM basket WHERE basket.User_ID = ?', [req.user.Id]);
+    
+                return res.status(200).json({
+                    success: true,
+                    error: null,
+                    data: {
+                        message: 'Course buying done successfully',
+                    },
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: {
+                        message: 'Money transfer not successful.',
+                    },
+                });
+            }
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 
