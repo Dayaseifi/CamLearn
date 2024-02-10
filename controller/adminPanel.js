@@ -35,7 +35,9 @@ class admninPanel {
         } catch (error) {
             next(error)
         }
+        
     }
+
 }
 
 module.exports = new admninPanel
